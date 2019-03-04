@@ -1,0 +1,42 @@
+pipeline{
+	agent any
+	tools{
+		maven 'Maven3'
+		jdk 'JDK1.8'
+	}
+	stages {
+		stage('Build'){
+			steps{
+				sh 'mvn clean package'
+			}
+			post {
+				success {
+					echo 'Now Archiving ...'
+					archiveArtifacts artifacts: '**/target/*.war'
+				}
+			}
+		}
+		stage('Deploy to Staging'){
+			steps{
+				build job : 'deploy-to-stage'
+			}
+		}
+		stage('Deploy to Production'){
+			steps{
+				timeout (time: 2, unit: 'DAYS'){
+					input message: "Approve PRODUCTION Deployment?"			
+				}			
+				build job : 'deploy-to-prod'
+			}
+			post {
+				success {
+					echo 'Production deployment successfully...'
+				}
+				failure {
+					echo 'Production deployment failed...'
+				}
+			}
+		}
+	}
+ }
+}
