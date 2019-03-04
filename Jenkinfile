@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+ 
+	tools{
+		maven 'Maven3'
+		jdk 'JDK1.8'
+	}
+	
+    parameters {
+         string(name: 'tomcat_dev', defaultValue: 'xx.xx.xx.xxx', description: 'EC2 Server')
+    }
+ 
+    triggers {
+         pollSCM('* * * * *')
+     }
+ 
+stages{
+        stage('Build'){
+            steps {
+                bat 'mvn clean package'
+            }
+            post {
+                success {
+                    echo 'Now Archiving...'
+                    archiveArtifacts artifacts: '**/target/*.war'
+                }
+            }
+        }
+ 
+		stage ('Deploy to EC2'){
+			steps {
+				bat "echo y | pscp -i C://Users//svaradha//Downloads//tomcat_demo.ppk target/*.war ec2-user@${tomcat_dev}:/var/lib/tomcat8/webapps"
+			}
+		}
+    }
+}
